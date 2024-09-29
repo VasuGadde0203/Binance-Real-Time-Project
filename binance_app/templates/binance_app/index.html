@@ -1,0 +1,219 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Page</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'binance_app/css/style.css' %}">
+    <script src="{% static 'binance_app/js/scripts.js' %}"></script>
+    
+</head>
+<body>
+    <div class="container">
+        <h1>Form Page</h1>
+        <form method="post" action="{% url 'index' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="client-name">Client Name:</label>
+                <input type="text" class="form-control" id="client-name" name="client_name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="account-name">Account Name:</label>
+                <input type="text" class="form-control" id="account-name" name="account_name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="history-dropdown">History:</label>
+                <select class="form-control" id="history-dropdown" name="history" onchange="updateEndpoint()" required>
+                    <option value="">Select an option</option>
+                    <option value="history">History</option>
+                    <option value="nonHistory">Non-History</option>
+                </select>
+            </div>
+
+            <div id="start-date" style="display: none;">
+                <div class="form-group">
+                    <label for="start-date-input">Start Date:</label>
+                    <input type="date" class="form-control" id="start-date-input" name="start_date">
+                </div>
+            </div>
+
+            <div id="end-date" style="display: none;">
+                <div class="form-group">
+                    <label for="end-date-input">End Date:</label>
+                    <input type="date" class="form-control" id="end-date-input" name="end_date">
+                </div>
+            </div>
+
+             <!-- Category Dropdown -->
+             <div class="form-group">
+                <label for="type-dropdown">Category:</label>
+                <select class="form-control" id="type-dropdown" name="category" onchange="updateEndpoint()" required>
+                    <option value="">Select an option</option>
+                    <option value="spot">Spot</option>
+                    <option value="futures">Futures</option>
+                </select>
+            </div> 
+
+            <!-- Endpoint Dropdown -->
+            <div class="form-group">
+                <label for="endpoint-dropdown">Endpoints:</label>
+                <select class="form-control" id="endpoint-dropdown" name="endpoint" required>
+                    <option value="">Select a category first</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn">Submit</button>
+        </form>
+
+        {% if show_download %}
+        <div id="download-section">
+            <label>Download your balances:</label>
+            <form method="post" action="{% url 'download_files' %}">
+                {% csrf_token %}
+                <input type="hidden" name="account_name" value="{{ request.POST.account_name }}">
+                <input type="hidden" name="endpoint" value="{{ request.POST.endpoint }}">
+                <button type="submit">Download</button>
+            </form>        
+        </div>
+        {% endif %}
+    </div>
+
+        {% if show_assets_download %}
+        <div>
+            <label for="futures_assets">Futures Assets</label>
+            <form method="post" action="{% url 'download_files' %}">
+                {% csrf_token %}
+                <input type="hidden" name="account_name" value="{{ request.POST.account_name }}">
+                <input type="hidden" name="endpoint" value="{{ request.POST.endpoint }}">
+                <button type="submit" name="download_assets">Download Futures Assets</button>
+        </form>
+            <br>
+        </div>
+        {% endif %}
+    
+        {% if show_positions_download %}
+        <div>
+            <label for="futures_positions">Futures Positions</label>
+            <form method="post" action="{% url 'download_files' %}">
+                {% csrf_token %}
+                <input type="hidden" name="account_name" value="{{ request.POST.account_name }}">
+                <input type="hidden" name="endpoint" value="{{ request.POST.endpoint }}">
+                <button type="submit" name="download_positions">Download Futures Assets</button>
+        </form>
+            <br>
+        </div>
+        {% endif %}
+ 
+    
+    
+
+    <script>
+        function updateEndpoint() {
+    console.log("Dropdown change detected");
+    var category = document.getElementById("type-dropdown").value;
+    var endpointDropdown = document.getElementById("endpoint-dropdown");
+    var history = document.getElementById("history-dropdown").value;
+    var startDate = document.getElementById("start-date");
+    var endDate = document.getElementById("end-date");
+
+
+    // Clear existing options
+    endpointDropdown.innerHTML = "";
+
+    var endpoints = {
+        spot: {
+            history: [
+                {value: 'spot_trade_list', text: 'Trade List'}, 
+                {value: 'spot_universal_transfer_history', text: 'Universal transfer history'}
+            ], 
+            nonHistory: [
+                {value: 'spot_account_information', text: 'Account information'},
+                //{value: 'spot_flexible_product', text: 'Flexible product position data'}
+            ]
+        }, 
+        futures: {
+            history: [
+                { value: 'futures_trade_list', text: 'Trade list'}
+            ],
+            nonHistory: [
+                { value: 'futures_account_information_user_data', text: 'Account information user data'}, 
+                { value: 'futures_position_information', text: 'Position information'},
+                { value: 'futures_account_balances', text: 'Futures account balances'}
+            ]
+        }
+    };
+
+    // Show or hide the date fields based on the selected history option
+    if (history === "history") {
+                startDate.style.display = "block";
+                endDate.style.display = "block";
+            } else {
+                startDate.style.display = "none";
+                endDate.style.display = "none";
+            }
+
+
+    if (category && history) {
+        var selectedEndpoints = endpoints[category][history];
+        selectedEndpoints.forEach(function(endpoint) {
+            var option = document.createElement("option");
+            option.value = endpoint.value;
+            option.text = endpoint.text;
+            endpointDropdown.appendChild(option);
+        });
+    } else {
+        var defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.text = "Selet a category and history first";
+        endpointDropdown.appendChild(defaultOption);
+    }
+        }
+    // Define endpoint options for each category
+    // var spotEndpoints = [
+    //     { value: "spot_account_information", text: "Account information" },
+    //     { value: "spot_trade_list", text: "Trade list" },
+    //     { value: "spot_universal_transfer_history", text: "Universal transfer history" },
+    //     { value: "spot_flexible_product_position_data", text: "Flexible product position data" }
+    // ];
+
+    // var futuresEndpoints = [
+    //     { value: "futures_account_information_user_data", text: "Account information user data" },
+    //     { value: "futures_trade_list", text: "Trade list" },
+    //     { value: "futures_position_information", text: "Position information" },
+    //     { value: "futures_account_balances", text: "Futures account balances" }
+    // ];
+
+//     var endpoints = [];
+
+//     // Choose endpoints based on selected category
+//     if (category === "spot") {
+//         endpoints = spotEndpoints;
+//     } else if (category === "futures") {
+//         endpoints = futuresEndpoints;
+//     }
+
+//     // Populate the endpoint dropdown
+//     endpoints.forEach(function(endpoint) {
+//         var option = document.createElement("option");
+//         option.value = endpoint.value;
+//         option.text = endpoint.text;
+//         endpointDropdown.appendChild(option);
+//     });
+
+//     // Add a default option if no category is selected
+//     if (endpoints.length === 0) {
+//         var defaultOption = document.createElement("option");
+//         defaultOption.value = "";
+//         defaultOption.text = "Select a category first";
+//         endpointDropdown.appendChild(defaultOption);
+//     }
+// }
+
+    </script>
+    
+</body>
+</html>
